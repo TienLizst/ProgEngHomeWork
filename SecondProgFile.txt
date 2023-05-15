@@ -1,0 +1,54 @@
+package com.tien;
+
+import com.tien.application.applicationHelper.ClientHandler;
+import com.tien.data.ClientInfo;
+import com.tien.exception.InconnectableStreamsException;
+import com.tien.exception.ServerSocketException;
+
+import java.io.IOException;
+import java.net.ServerSocket;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
+public class Server {
+    public static int MAX_LOGIN_SIZE = 50;
+    public static int MAX_MESSAGE_SIZE = 255;
+    private static final Logger LOGGER = Logger.getLogger(Server.class.getName());
+    private static final int PORT = 1717;
+    private static final List<ClientInfo> clients = new ArrayList<>();
+    private static boolean isRunning;
+
+    public Server() {
+    }
+
+
+    public void start() {
+        try (ServerSocket serverSocket = new ServerSocket(PORT)){
+            isRunning = true;
+            System.out.println("Server start!");
+            while (isRunning){
+                ClientHandler clientHandler;
+                try {
+                    clientHandler = new ClientHandler(serverSocket.accept(), clients);
+                } catch (InconnectableStreamsException e) {
+                    LOGGER.log(Level.WARNING, "Client can't be connect. Stream connect problem", e);
+                    continue;
+                }
+                System.out.printf("Start client (%d) handling %n", clients.size()+1);
+                clientHandler.join();
+                clientHandler.start();
+            }
+            System.out.println("Server stop");
+        } catch (IOException e) {
+            throw new ServerSocketException("Server socket exception", e);
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public void stop(){
+        isRunning = false;
+    }
+}
